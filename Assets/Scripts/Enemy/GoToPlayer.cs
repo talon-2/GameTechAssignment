@@ -59,15 +59,19 @@ public class GoToPlayer : Node
                         enemyHitDistance = 2.5f;
                 }
                 //make sure the AI only goes in attack distance
-
+                //maintain distance
+                //if can attack, stop walking towards player
 
                 if (Vector3.Distance(previousPosition, _transform.position) < EnemyBT.walkDistance)      //walk until near walk distance
                 {
                     if (Vector3.Distance(_transform.position, GameController.player.transform.position) > enemyHitDistance)      //walk towards target
                     {
                         GameController.enemyCurrentState = "Chasing";
-                        _transform.position = Vector3.MoveTowards(_transform.position, GameController.player.transform.position, EnemyBT.speed * Time.deltaTime);
-                        _transform.LookAt(GameController.player.transform.position);
+                        if (!GameController.damaged)
+                        {
+                            _transform.position = Vector3.MoveTowards(_transform.position, GameController.player.transform.position, EnemyBT.speed * Time.deltaTime);
+                            _transform.LookAt(GameController.player.transform.position);
+                        }
                     }
                     else if (Vector3.Distance(_transform.position, GameController.player.transform.position) < enemyHitDistance)
                     {

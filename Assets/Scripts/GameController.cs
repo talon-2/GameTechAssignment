@@ -89,10 +89,11 @@ public class GameController : MonoBehaviour
             {
                 if (Vector3.Distance(player.transform.position, enemy.transform.position) <= playerAttackDistance)//allow player attack option if close
                 {
+                    ShowAttackRange(100, playerAttackDistance);
                     attBtn.interactable = true;
                 }
                 turnIndicator.text = playerTurn;
-                showRadius(100, walkableDistance);
+                ShowWalkableRadius(100, walkableDistance);
 
                 if (Input.GetMouseButtonDown(0) && !canDoAction)
                 {
@@ -236,7 +237,27 @@ public class GameController : MonoBehaviour
 
     }
 
-    void showRadius(int steps, float radius)
+    void ShowWalkableRadius(int steps, float radius)
+    {
+        circleRenderer.positionCount = steps;
+
+        for (int currentStep = 0; currentStep < steps; currentStep++)
+        {
+            float circumferenceProgress = (float)currentStep / steps;
+
+            float currentRadian = circumferenceProgress * 2 * Mathf.PI;
+            float xScaled = Mathf.Cos(currentRadian);
+            float yScaled = Mathf.Sin(currentRadian);
+
+            float x = xScaled * radius;
+            float y = yScaled * radius;
+            Vector3 currentPosition = new Vector3(x, y, 0);
+
+            circleRenderer.SetPosition(currentStep, currentPosition);
+        }
+    }
+
+    void ShowAttackRange(int steps, float radius)
     {
         circleRenderer.positionCount = steps;
 
