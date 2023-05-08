@@ -4,7 +4,6 @@ using UnityEngine;
 
 using BehaviorTree;
 
-
 public class CheckHealth : Node
 {
     private Transform _transform;
@@ -17,6 +16,7 @@ public class CheckHealth : Node
     { 
         _transform = transform; 
     }
+
     public override NodeState Evaluate()
     {
         if (!GameController.isPlayerTurn)
@@ -24,39 +24,43 @@ public class CheckHealth : Node
             counter += Time.deltaTime;
             if (counter > waitForPlayer)
             {
-                
                 if (reached)
                 {
                     previousPosition = _transform.position;
                     reached = false;
                 }
                 Transform target = (Transform)GetData("Player");
-                if (GameController.enemyHealthAmt == 1)
+
+                if(GameController.difficulty == "Easy")
                 {
-                    if (Vector3.Distance(previousPosition, _transform.position) < EnemyBT.walkDistance)
+                    if (GameController.enemyHealthAmt == 1)
                     {
-                        Debug.Log("tset");
-                        //if health is low, run away to cover
-                        Vector3 dirToPlayer = _transform.position - target.transform.position;
+                        if (Vector3.Distance(previousPosition, _transform.position) < EnemyBT.walkDistance)
+                        {
+                            GameController.enemyCurrentState = "Running";
+                            Debug.Log("tset");
+                            //if health is low, 
+                            Vector3 dirToPlayer = _transform.position - target.transform.position;
 
-                        Vector3 newPos = _transform.position + dirToPlayer;
+                            Vector3 newPos = _transform.position + dirToPlayer;
 
-                        //_transform.position = newPos * EnemyBT.walkDistance * Time.deltaTime;
-                        _transform.position = Vector3.MoveTowards(_transform.position, newPos, EnemyBT.walkDistance * Time.deltaTime);
+                            _transform.position = Vector3.MoveTowards(_transform.position, newPos, EnemyBT.walkDistance * Time.deltaTime);
 
-                        //if player health is low ignore this node
-                        
+                        }
+                        else
+                        {
+                            reached = true;
+                            GameController.ChangeTurn();
+                        }
                     }
                     else
                     {
-                        reached = true;
-                        GameController.ChangeTurn();
+                        state = NodeState.FAILURE;
+                        return state;
                     }
                 }
-                else
-                {
-                    state = NodeState.FAILURE;
-                    return state;
+                else{//hard mode
+                    
                 }
             }
         }

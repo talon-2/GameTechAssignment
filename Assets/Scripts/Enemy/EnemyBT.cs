@@ -5,9 +5,9 @@ public class EnemyBT : Tree
 {
     public UnityEngine.Transform[] waypoints;
 
-    public static float speed = 4f;
-    public static float fovRange;
-    public static float walkDistance;
+    public static float speed = 5f;
+    public static float fovRange = 6f;
+    public static float walkDistance = 4f;
 
     protected override Node SetupTree()
     {
@@ -21,6 +21,7 @@ public class EnemyBT : Tree
             {
                 new CheckEnemy(transform),
                 new GoToPlayer(transform),
+                new EnemyAttack(transform),
             }),
             new EnemyPatrol(transform, waypoints),
         });

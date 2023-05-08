@@ -20,11 +20,9 @@ public class GameController : MonoBehaviour
     [SerializeField] private float walkDistance;
     [SerializeField] private float healStartDistance;
     [SerializeField] private float healAmount;
-    [SerializeField] private float playerHealthAmount;
-    [SerializeField] private float enemyHealthAmount;
     [SerializeField] private Slider playerHealth;
     [SerializeField] private Slider enemyHealth;
-    [SerializeField] private float damage = 1;
+   
     [SerializeField] private Text turnIndicator;
     [SerializeField] private Text enemyStatus;
     private float playerAttackDistance = 2.5f;
@@ -45,11 +43,11 @@ public class GameController : MonoBehaviour
     string chase = "Chasing";
     string attack = "Attacking";
     string run = "Running";
-    public static bool damaged;
     RaycastHit hit;
     bool detectEsc = false;
 
     //to be used by BT
+    public static float playerAttDistance;
     public static string enemyTyping;
     public static string enemyWeapon;
     public static string playerWeapon;
@@ -59,6 +57,7 @@ public class GameController : MonoBehaviour
     public static float walkableDistance = 6f;
     public static float enemyHealthAmt = 3f;
     public static float playerHealthAmt = 3f;
+    public static float damage = 1;
     public static string enemyCurrentState = "Idle";
     public static GameObject player;
     public static GameObject enemy;
@@ -69,12 +68,11 @@ public class GameController : MonoBehaviour
 
     void Start()
     {
+        playerAttDistance = playerAttackDistance;
         walkableDistance = walkDistance;
         healDistance = healStartDistance;
         player = GameObject.FindGameObjectWithTag("Player");
         enemy = GameObject.FindGameObjectWithTag("Enemy");
-        enemyHealthAmt = enemyHealthAmount;
-        playerHealthAmt = playerHealthAmount;
         attBtn.interactable = false;
     }
 
@@ -89,7 +87,6 @@ public class GameController : MonoBehaviour
             {
                 if (Vector3.Distance(player.transform.position, enemy.transform.position) <= playerAttackDistance)//allow player attack option if close
                 {
-                    ShowAttackRange(100, playerAttackDistance);
                     attBtn.interactable = true;
                 }
                 turnIndicator.text = playerTurn;
@@ -106,6 +103,15 @@ public class GameController : MonoBehaviour
                             player.GetComponent<AIController>().agent.SetDestination(hit.point);//move player to hit position
                             if (Vector3.Distance(hit.point, enemy.transform.position) > playerAttackDistance)
                             {
+                                distance = Vector3.Distance(enemy.transform.position, hit.point);
+                                if (distance > healDistance)
+                                {
+                                    if(playerHealth.value < playerHealth.maxValue)
+                                    {
+                                        playerHealth.value += healAmount;
+                                        playerHealthAmt += healAmount;
+                                    }
+                                }
                                 canDoAction = false;
                                 StartCoroutine(Wait());
                                 ChangeTurn();
@@ -113,39 +119,20 @@ public class GameController : MonoBehaviour
                         }
                     }
                 }
-                if (Vector3.Distance(player.transform.position, hit.point) <= 1.5f && canDoAction)//wait till player reach hit position
-                {
-                    distance = Vector3.Distance(enemy.transform.position, hit.point);
-                    if (distance > healDistance)
-                    {
-                        playerHealth.value += healAmount;
-                        playerHealthAmt += healAmount;
-                    }
-                }
-               
             }
             else
             {
-                //tree will run here when reach here due to isPlayerTurn condition apply to whole project
                 turnIndicator.text = enemyTurn;
-                if(Vector3.Distance(enemy.transform.position, player.transform.position) < healDistance && !healed)
+                //tree will run simultaneously here due to isPlayerTurn condition apply to whole project
+                if (Vector3.Distance(enemy.transform.position, player.transform.position) < healDistance && !healed)
                 {
-                    enemyHealth.value += healAmount; 
-                    enemyHealthAmt += healAmount;
-                    healed = true;
-                }
-                if (!damaged)
-                {
-                    distance = Vector3.Distance(enemy.transform.position, player.transform.position);
-                    if (distance <= GoToPlayer.enemyHitDistance)
+                    if(enemyHealth.value < enemyHealth.maxValue)
                     {
-                        enemyCurrentState = attack;
-                        playerHealth.value -= damage;
-                        playerHealthAmt -= damage;
-                        damaged = true;
+                        enemyHealth.value += healAmount;
+                        enemyHealthAmt += healAmount;
+                        healed = true;
                     }
                 }
-
             }
             if (playerHealth.value == 0)
             {
@@ -186,6 +173,8 @@ public class GameController : MonoBehaviour
 
     void ChangeGameSettings()
     {
+        playerHealth.value = playerHealthAmt;
+
         if(enemyCurrentState == idle)
         {
             enemyStatus.text = idle;
@@ -264,26 +253,6 @@ public class GameController : MonoBehaviour
         }
     }
 
-    void ShowAttackRange(int steps, float radius)
-    {
-        circleRenderer.positionCount = steps;
-
-        for (int currentStep = 0; currentStep < steps; currentStep++)
-        {
-            float circumferenceProgress = (float)currentStep / steps;
-
-            float currentRadian = circumferenceProgress * 2 * Mathf.PI;
-            float xScaled = Mathf.Cos(currentRadian);
-            float yScaled = Mathf.Sin(currentRadian);
-
-            float x = xScaled * radius;
-            float y = yScaled * radius;
-            Vector3 currentPosition = new Vector3(x, y, 0);
-
-            circleRenderer.SetPosition(currentStep, currentPosition);
-        }
-    }
-
     public static void ChangeTurn()
     {
         if (isPlayerTurn)
@@ -294,7 +263,6 @@ public class GameController : MonoBehaviour
         {
             isPlayerTurn = true;
         }
-        damaged = false;
         healed = false;
     }
 
@@ -351,7 +319,6 @@ public class GameController : MonoBehaviour
         enemyHealthAmt -= damage;
         StartCoroutine(Wait());
         ChangeTurn();
-
     }
 
     IEnumerator Wait()

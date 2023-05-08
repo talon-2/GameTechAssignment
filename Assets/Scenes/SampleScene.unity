@@ -1249,11 +1249,8 @@ MonoBehaviour:
   walkDistance: 6
   healStartDistance: 0.5
   healAmount: 0.5
-  playerHealthAmount: 3
-  enemyHealthAmount: 3
   playerHealth: {fileID: 308262649}
   enemyHealth: {fileID: 831475483}
-  damage: 1
   turnIndicator: {fileID: 1987604749}
   enemyStatus: {fileID: 1018112425}
   attBtn: {fileID: 604708195}
