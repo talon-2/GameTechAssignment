@@ -27,7 +27,8 @@ public class EnemyPatrol : Node
     {
         if (!GameController.isPlayerTurn)
         {
-            counter += Time.deltaTime;
+            GameController.enemyCurrentState = "Patroling";
+            counter += Time.deltaTime;//wait few secs to move 
             if(counter > waitForPlayer)
             {
                 if (waiting)
@@ -35,7 +36,7 @@ public class EnemyPatrol : Node
                     waitCounter += Time.deltaTime;
                     if (waitCounter >= waitTime)
                     {
-                        waiting = false;
+                        waiting = false;    //wait if reach new waypoint
                     }
                 }
                 else
@@ -49,6 +50,7 @@ public class EnemyPatrol : Node
                         waiting = true;
 
                         currentWaypointIndex = (currentWaypointIndex + 1) % _waypoints.Length;
+                        counter = 0;
                         GameController.ChangeTurn();
                     }
                     else

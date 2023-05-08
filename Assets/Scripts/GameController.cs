@@ -5,26 +5,32 @@ using UnityEngine.UI;
 
 public class GameController : MonoBehaviour
 {
-
-    public LineRenderer circleRenderer;
-    public float walkDistance;
-    public float healStartDistance;
-    public float healAmount;
-    public float playerHealthAmount;
-    public float enemyHealthAmount;
-    [SerializeField] private Slider playerHealth;
-    [SerializeField] private Slider enemyHealth;
-    public float damage = 1;
-    public Text turnIndicator;
-    float distance;
-    bool canAttack;
+    [Header("Editables")]
     public Text enemyType;
     public Text enemyWeaponUsed;
     public Text playerWeaponUsed;
     public Text gameDifficulty;
-
+    public GameObject MainGameUI;
+    public GameObject SettingsUI;
     public float playerRangeAtt = 5f;
     public float playerMeleeAtt = 1.5f;
+
+    [Header("Required Information(Uneditable)")]
+    public LineRenderer circleRenderer;
+    [SerializeField] private float walkDistance;
+    [SerializeField] private float healStartDistance;
+    [SerializeField] private float healAmount;
+    [SerializeField] private float playerHealthAmount;
+    [SerializeField] private float enemyHealthAmount;
+    [SerializeField] private Slider playerHealth;
+    [SerializeField] private Slider enemyHealth;
+    [SerializeField] private float damage = 1;
+    [SerializeField] private Text turnIndicator;
+    [SerializeField] private Text enemyStatus;
+    private float playerAttackDistance = 2.5f;
+    float distance;
+    bool canDoAction;
+    public Button attBtn;
 
     string heavy = "Heavy";
     string light = "Light";
@@ -34,14 +40,14 @@ public class GameController : MonoBehaviour
     string hard = "Hard";
     string playerTurn = "Player's Turn";
     string enemyTurn = "Enemy's Turn";
-
-    public float playerAttackDistance = 2f;
+    string idle = "Idle";
+    string patrol = "Patroling";
+    string chase = "Chasing";
+    string attack = "Attacking";
+    string run = "Running";
     public static bool damaged;
-
     RaycastHit hit;
 
-    public GameObject MainGameUI;
-    public GameObject SettingsUI;
     bool detectEsc = false;
 
     //to be used by BT
@@ -54,6 +60,7 @@ public class GameController : MonoBehaviour
     public static float walkableDistance = 6f;
     public static float enemyHealthAmt = 3f;
     public static float playerHealthAmt = 3f;
+    public static string enemyCurrentState = "Idle";
     public static GameObject player;
     public static GameObject enemy;
 
@@ -68,53 +75,53 @@ public class GameController : MonoBehaviour
         enemy = GameObject.FindGameObjectWithTag("Enemy");
         enemyHealthAmt = enemyHealthAmount;
         playerHealthAmt = playerHealthAmount;
+        attBtn.interactable = false;
     }
 
     void Update()
     {
         OpenSettings();
         ChangeGameSettings();
+
         if (!detectEsc)
         {
             if (isPlayerTurn)
             {
+                if (Vector3.Distance(player.transform.position, enemy.transform.position) <= playerAttackDistance)//allow player attack option if close
+                {
+                    attBtn.interactable = true;
+                }
                 turnIndicator.text = playerTurn;
                 showRadius(100, walkableDistance);
-                if (Input.GetMouseButtonDown(0))
+
+                if (Input.GetMouseButtonDown(0) && !canDoAction)
                 {
-                    canAttack = true;
                     if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100))
                     {
                         distance = Vector3.Distance(player.transform.position, hit.point);
                         if (distance < walkableDistance)
                         {
-                            player.GetComponent<AIController>().agent.SetDestination(hit.point);
-                            
-                            distance = Vector3.Distance(enemy.transform.position, hit.point);
-                            if (distance > healDistance)
+                            canDoAction = true;
+                            player.GetComponent<AIController>().agent.SetDestination(hit.point);//move player to hit position
+                            if (Vector3.Distance(hit.point, enemy.transform.position) > playerAttackDistance)
                             {
-                                playerHealth.value += healAmount;
-                                playerHealthAmt += healAmount;
+                                canDoAction = false;
+                                StartCoroutine(Wait());
+                                ChangeTurn();
                             }
-                            if(distance > playerAttackDistance)
-                            {
-                                canAttack = false;
-                            }
-                            StartCoroutine(WaitForNextTurn());
-
                         }
                     }
                 }
-                if (canAttack)
+                if (Vector3.Distance(player.transform.position, hit.point) <= 1.5f && canDoAction)//wait till player reach hit position
                 {
-                    if (Vector3.Distance(player.transform.position, enemy.transform.position) <= playerAttackDistance)
-                        //if enemy close enough, damage them
+                    distance = Vector3.Distance(enemy.transform.position, hit.point);
+                    if (distance > healDistance)
                     {
-                        enemyHealth.value -= damage;
-                        enemyHealthAmt -= damage;
-                        canAttack = false;
+                        playerHealth.value += healAmount;
+                        playerHealthAmt += healAmount;
                     }
                 }
+               
             }
             else
             {
@@ -125,6 +132,7 @@ public class GameController : MonoBehaviour
                     distance = Vector3.Distance(enemy.transform.position, player.transform.position);
                     if (distance <= GoToPlayer.enemyHitDistance)
                     {
+                        enemyCurrentState = attack;
                         playerHealth.value -= damage;
                         playerHealthAmt -= damage;
                         damaged = true;
@@ -146,9 +154,9 @@ public class GameController : MonoBehaviour
 
     void OpenSettings()
     {
-        if(Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if(detectEsc)
+            if (detectEsc)
             {
                 MainGameUI.SetActive(true);
                 SettingsUI.SetActive(false);
@@ -160,13 +168,38 @@ public class GameController : MonoBehaviour
                 SettingsUI.SetActive(true);
                 detectEsc = true;
             }
-            
+
+        }
+        if (!isPlayerTurn)
+        {
+            attBtn.interactable = false;
         }
     }
 
     void ChangeGameSettings()
     {
-        if(enemyType.text == heavy)
+        if(enemyCurrentState == idle)
+        {
+            enemyStatus.text = idle;
+        }
+        else if( enemyCurrentState == patrol)
+        {
+            enemyStatus.text = patrol;
+        }
+        else if (enemyCurrentState == chase)
+        {
+            enemyStatus.text = chase;
+        }
+        else if (enemyCurrentState == attack)
+        {
+            enemyStatus.text = attack;
+        }
+        else if (enemyCurrentState == run)
+        {
+            enemyStatus.text = run;
+        }
+
+        if (enemyType.text == heavy)
         {
             enemyTyping = heavy;
         }
@@ -184,7 +217,7 @@ public class GameController : MonoBehaviour
         }
         if (playerWeaponUsed.text == range)
         {
-            playerWeapon = range ;
+            playerWeapon = range;
             playerAttackDistance = playerRangeAtt;
         }
         else
@@ -200,23 +233,24 @@ public class GameController : MonoBehaviour
         {
             difficulty = hard;
         }
+
     }
 
-    void showRadius(int steps, float  radius)
+    void showRadius(int steps, float radius)
     {
         circleRenderer.positionCount = steps;
 
-        for(int currentStep = 0; currentStep < steps; currentStep++)
+        for (int currentStep = 0; currentStep < steps; currentStep++)
         {
-            float circumferenceProgress = (float) currentStep / steps;
+            float circumferenceProgress = (float)currentStep / steps;
 
             float currentRadian = circumferenceProgress * 2 * Mathf.PI;
             float xScaled = Mathf.Cos(currentRadian);
             float yScaled = Mathf.Sin(currentRadian);
 
             float x = xScaled * radius;
-            float y = yScaled * radius; 
-            Vector3 currentPosition = new Vector3(x,y, 0);
+            float y = yScaled * radius;
+            Vector3 currentPosition = new Vector3(x, y, 0);
 
             circleRenderer.SetPosition(currentStep, currentPosition);
         }
@@ -234,15 +268,10 @@ public class GameController : MonoBehaviour
         }
         damaged = false;
     }
-    
-    IEnumerator WaitForNextTurn()
-    {
-        yield return new WaitForSeconds(2f);
-        ChangeTurn();
-    }
 
-    public void BtnEnemyType() { 
-        if(enemyType.text == heavy)
+    public void BtnEnemyType()
+    {
+        if (enemyType.text == heavy)
         {
             enemyType.text = light;
         }
@@ -250,7 +279,7 @@ public class GameController : MonoBehaviour
         {
             enemyType.text = heavy;
         }
-        
+
     }
     public void BtnEnemyWeapon()
     {
@@ -286,6 +315,19 @@ public class GameController : MonoBehaviour
             gameDifficulty.text = easy;
         }
 
+    }
+    public void BtnAttack()
+    {
+        enemyHealth.value -= damage;
+        enemyHealthAmt -= damage;
+        StartCoroutine(Wait());
+        ChangeTurn();
+
+    }
+
+    IEnumerator Wait()
+    {
+        yield return new WaitForSeconds(2f);
     }
 }
 
