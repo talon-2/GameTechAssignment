@@ -19,13 +19,16 @@ public class CheckHealth : Node
         Transform target = (Transform)GetData("Player");
         if (GameController.enemyHealthAmt == 1)
         {
-                    //if health is low, run away to cover
-                    Vector3 dirToPlayer = _transform.position - target.transform.position;
+        
+            //if health is low, run away to cover
+            Vector3 dirToPlayer = _transform.position - target.transform.position;
 
-                    Vector3 newPos = _transform.position + dirToPlayer;
+            Vector3 newPos = _transform.position + dirToPlayer;
 
-                    AIController.agent.setDestination(newPos);
-                    //if player health is low ignore this node
+            //_transform.position = newPos * EnemyBT.walkDistance * Time.deltaTime;
+            _transform.position = Vector3.MoveTowards(_transform.position, newPos, EnemyBT.walkDistance * Time.deltaTime);
+                    
+            //if player health is low ignore this node
         }
         else
         {
