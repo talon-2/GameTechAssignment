@@ -7,10 +7,7 @@ public class GameController : MonoBehaviour
 {
 
     public LineRenderer circleRenderer;
-    //editable values = walkdistance, attackdistance, healStartDistance, healAmount, player and enemyhealth
-    public static bool damaged;
     public float walkDistance;
-    public float attDistance;
     public float healStartDistance;
     public float healAmount;
     public float playerHealthAmount;
@@ -20,11 +17,14 @@ public class GameController : MonoBehaviour
     public float damage = 1;
     public Text turnIndicator;
     float distance;
-
+    bool canAttack;
     public Text enemyType;
     public Text enemyWeaponUsed;
     public Text playerWeaponUsed;
     public Text gameDifficulty;
+
+    public float playerRangeAtt = 5f;
+    public float playerMeleeAtt = 1.5f;
 
     string heavy = "Heavy";
     string light = "Light";
@@ -32,32 +32,37 @@ public class GameController : MonoBehaviour
     string range = "Range";
     string easy = "Easy";
     string hard = "Hard";
+    string playerTurn = "Player's Turn";
+    string enemyTurn = "Enemy's Turn";
 
-    public static string enemyTyping;
-    public static string enemyWeapon;
-    public static string playerWeapon;
-    public static string difficulty;
+    public float playerAttackDistance = 2f;
+    public static bool damaged;
 
-    public static float healDistance = 10f;
-    public static float healingAmt = 0.5f;
-    public static float walkableDistance = 6f;
-    public static float attackDistance = 2f;
-    public static float enemyHealthAmt = 3f;
-    public static float playerHealthAmt = 3f;
-    public static GameObject player;
-    public static GameObject enemy;
     RaycastHit hit;
 
     public GameObject MainGameUI;
     public GameObject SettingsUI;
     bool detectEsc = false;
 
+    //to be used by BT
+    public static string enemyTyping;
+    public static string enemyWeapon;
+    public static string playerWeapon;
+    public static string difficulty;
+    public static float healDistance = 6f;
+    public static float healingAmt = 0.5f;
+    public static float walkableDistance = 6f;
+    public static float enemyHealthAmt = 3f;
+    public static float playerHealthAmt = 3f;
+    public static GameObject player;
+    public static GameObject enemy;
+
     public static bool isPlayerTurn = true;       //first turn is player
+
 
     void Start()
     {
         walkableDistance = walkDistance;
-        attackDistance = attDistance;
         healDistance = healStartDistance;
         player = GameObject.FindGameObjectWithTag("Player");
         enemy = GameObject.FindGameObjectWithTag("Enemy");
@@ -73,47 +78,52 @@ public class GameController : MonoBehaviour
         {
             if (isPlayerTurn)
             {
-                turnIndicator.text = "Player's Turn";
+                turnIndicator.text = playerTurn;
                 showRadius(100, walkableDistance);
                 if (Input.GetMouseButtonDown(0))
                 {
+                    canAttack = true;
                     if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100))
                     {
                         distance = Vector3.Distance(player.transform.position, hit.point);
                         if (distance < walkableDistance)
                         {
                             player.GetComponent<AIController>().agent.SetDestination(hit.point);
-                            if (!damaged)
-                            {
-                                distance = Vector3.Distance(player.transform.position, enemy.transform.position);
-                                if (distance <= attackDistance)                                                      //if enemy close enough, damage them
-                                {
-                                    enemyHealth.value -= damage;
-                                    enemyHealthAmt -= damage;
-                                    damaged = true;
-                                }
-                            }
+                            
                             distance = Vector3.Distance(enemy.transform.position, hit.point);
                             if (distance > healDistance)
                             {
                                 playerHealth.value += healAmount;
                                 playerHealthAmt += healAmount;
                             }
+                            if(distance > playerAttackDistance)
+                            {
+                                canAttack = false;
+                            }
                             StartCoroutine(WaitForNextTurn());
+
                         }
                     }
                 }
-
+                if (canAttack)
+                {
+                    if (Vector3.Distance(player.transform.position, enemy.transform.position) <= playerAttackDistance)
+                        //if enemy close enough, damage them
+                    {
+                        enemyHealth.value -= damage;
+                        enemyHealthAmt -= damage;
+                        canAttack = false;
+                    }
+                }
             }
             else
             {
-
-                turnIndicator.text = "Enemy's Turn";
-                //tree will run 
+                //tree will run here when reach here due to isPlayerTurn condition apply to whole project
+                turnIndicator.text = enemyTurn;
                 if (!damaged)
                 {
                     distance = Vector3.Distance(enemy.transform.position, player.transform.position);
-                    if (distance <= attackDistance)
+                    if (distance <= GoToPlayer.enemyHitDistance)
                     {
                         playerHealth.value -= damage;
                         playerHealthAmt -= damage;
@@ -175,10 +185,12 @@ public class GameController : MonoBehaviour
         if (playerWeaponUsed.text == range)
         {
             playerWeapon = range ;
+            playerAttackDistance = playerRangeAtt;
         }
         else
         {
             playerWeapon = melee;
+            playerAttackDistance = playerMeleeAtt;
         }
         if (gameDifficulty.text == easy)
         {

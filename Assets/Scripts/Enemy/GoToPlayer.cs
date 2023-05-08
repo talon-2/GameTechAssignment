@@ -10,7 +10,12 @@ public class GoToPlayer : Node
     private float waitForPlayer = 2f;
     private float counter = 0f;
     private Vector3 previousPosition;
-    private float walkDistance;
+    private bool reached = true;
+    public static float enemyHitDistance;
+    
+    string heavy = "Heavy";
+    string range = "Range";
+    string easy = "Easy";
 
     public GoToPlayer(Transform transform)
     {
@@ -24,25 +29,67 @@ public class GoToPlayer : Node
             counter += Time.deltaTime;
             if (counter > waitForPlayer)
             {
-                Transform target = (Transform)GetData("Player");
-
-                if(GameController.enemyTyping == "Heavy")
+                if(reached)
                 {
-                    walkDistance = 4f;
+                    previousPosition = _transform.position;
+                    reached = false;
+                }
+                Transform target = (Transform)GetData("Player");
+                if (GameController.difficulty == easy)//make sure enemy can only walk certain distance, hard mode will increase the numbers
+                {
+                    if (GameController.enemyTyping == heavy)
+                    {
+                        EnemyBT.walkDistance = 2f;
+                    }
+                    else
+                    {
+                        EnemyBT.walkDistance = 4f;
+                    }
+                    if (GameController.enemyWeapon == range)
+                    {
+                        enemyHitDistance = 3f;
+                    }
+                    else
+                    {
+                        enemyHitDistance = 1.5f;
+                    }
                 }
                 else
                 {
-                    walkDistance = 6f;
+                    if (GameController.enemyTyping == heavy)
+                    {
+                        EnemyBT.walkDistance = 4f;
+                    }
+                    else
+                    {
+                        EnemyBT.walkDistance = 6f;
+                    }
+                    if(GameController.enemyWeapon == range)
+                    {
+                        enemyHitDistance = 5f;
+                    }
+                    else
+                    {
+                        enemyHitDistance = 2.5f;
+                    }
                 }
-
-
-                if (Vector3.Distance(_transform.position, GameController.player.transform.position) > 1.5f)
+                //if range, go within range and shoot, if hard mode, check what weapon player will use.
+                
+                if(Vector3.Distance(previousPosition, _transform.position) < EnemyBT.walkDistance)      //walk until near walk distance
                 {
-                    _transform.position = Vector3.MoveTowards( _transform.position, GameController.player.transform.position, EnemyBT.speed * Time.deltaTime);
-                    _transform.LookAt(GameController.player.transform.position);
+                    if (Vector3.Distance(_transform.position, GameController.player.transform.position) > enemyHitDistance)      //walk towards target
+                    {
+                        _transform.position = Vector3.MoveTowards(_transform.position, GameController.player.transform.position, EnemyBT.speed * Time.deltaTime);
+                        _transform.LookAt(GameController.player.transform.position);
+                    }
+                    else if (Vector3.Distance(_transform.position, GameController.player.transform.position) < enemyHitDistance)
+                    {
+                        GameController.ChangeTurn();
+                    }
                 }
-                else if (Vector3.Distance(_transform.position, GameController.player.transform.position) < 1.5f)
+                else
                 {
+                    reached = true;
                     GameController.ChangeTurn();
                 }
             }

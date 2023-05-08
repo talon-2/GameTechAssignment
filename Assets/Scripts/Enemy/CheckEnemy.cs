@@ -9,6 +9,7 @@ public class CheckEnemy : Node
     private static int _enemyLayerMask = 1 << 6;
 
     private Transform _transform;
+    string easy = "Easy";
 
     public CheckEnemy(Transform transform)
     {
@@ -18,9 +19,17 @@ public class CheckEnemy : Node
     public override NodeState Evaluate()
     {
         object t = GetData("Player");
+        if(GameController.difficulty == easy)
+        {
+            EnemyBT.fovRange = 6f;
+        }
+        else
+        {
+            EnemyBT.fovRange = 10f;
+        }
         if (t == null)
         {
-
+            
             float distance = Vector3.Distance(_transform.position, GameController.player.transform.position);
             
             if (distance < EnemyBT.fovRange)
