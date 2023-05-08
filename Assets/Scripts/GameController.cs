@@ -18,7 +18,6 @@ public class GameController : MonoBehaviour
     [Header("Required Information(Uneditable)")]
     public LineRenderer circleRenderer;
     [SerializeField] private float walkDistance;
-    [SerializeField] private float healStartDistance;
     [SerializeField] private float healAmount;
     [SerializeField] private Slider playerHealth;
     [SerializeField] private Slider enemyHealth;
@@ -70,7 +69,6 @@ public class GameController : MonoBehaviour
     {
         playerAttDistance = playerAttackDistance;
         walkableDistance = walkDistance;
-        healDistance = healStartDistance;
         player = GameObject.FindGameObjectWithTag("Player");
         enemy = GameObject.FindGameObjectWithTag("Enemy");
         attBtn.interactable = false;
@@ -103,7 +101,7 @@ public class GameController : MonoBehaviour
                             player.GetComponent<AIController>().agent.SetDestination(hit.point);//move player to hit position
                             if (Vector3.Distance(hit.point, enemy.transform.position) > playerAttackDistance)
                             {
-                                distance = Vector3.Distance(enemy.transform.position, hit.point);
+                                distance = Vector3.Distance(hit.point, enemy.transform.position);
                                 if (distance > healDistance)
                                 {
                                     if(playerHealth.value < playerHealth.maxValue)
