@@ -4,6 +4,7 @@ using UnityEngine;
 
 using BehaviorTree;
 
+
 public class CheckHealth : Node
 {
     private Transform _transform;
@@ -19,6 +20,11 @@ public class CheckHealth : Node
         if (GameController.enemyHealthAmt == 1)
         {
                     //if health is low, run away to cover
+                    Vector3 dirToPlayer = _transform.position - target.transform.position;
+
+                    Vector3 newPos = _transform.position + dirToPlayer;
+
+                    AIController.agent.setDestination(newPos);
                     //if player health is low ignore this node
         }
         else
