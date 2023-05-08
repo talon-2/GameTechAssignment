@@ -33,7 +33,7 @@ public class CheckHealth : Node
 
                 if(GameController.difficulty == "Easy")
                 {
-                    if (GameController.enemyHealthAmt == 1)
+                    if (GameController.enemyHealthAmt == 1)     //if enemy at one health, just run
                     {
                         if (Vector3.Distance(previousPosition, _transform.position) < EnemyBT.walkDistance)
                         {
@@ -60,7 +60,14 @@ public class CheckHealth : Node
                     }
                 }
                 else{//hard mode
-                    
+
+                    //if enemy at one health
+                    //if enemy weapon is range and player weapon is melee, run away
+                    // if enemy type is light and enemy weapon is melee, run away
+                    //rest of conditions set to FAILURE to skip.
+
+                    state = NodeState.FAILURE;
+                    return state;
                 }
             }
         }
