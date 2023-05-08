@@ -47,7 +47,6 @@ public class GameController : MonoBehaviour
     string run = "Running";
     public static bool damaged;
     RaycastHit hit;
-
     bool detectEsc = false;
 
     //to be used by BT
@@ -63,6 +62,7 @@ public class GameController : MonoBehaviour
     public static string enemyCurrentState = "Idle";
     public static GameObject player;
     public static GameObject enemy;
+    public static bool healed = false;
 
     public static bool isPlayerTurn = true;       //first turn is player
 
@@ -128,6 +128,12 @@ public class GameController : MonoBehaviour
             {
                 //tree will run here when reach here due to isPlayerTurn condition apply to whole project
                 turnIndicator.text = enemyTurn;
+                if(Vector3.Distance(enemy.transform.position, player.transform.position) < healDistance && !healed)
+                {
+                    enemyHealth.value += healAmount; 
+                    enemyHealthAmt += healAmount;
+                    healed = true;
+                }
                 if (!damaged)
                 {
                     distance = Vector3.Distance(enemy.transform.position, player.transform.position);
@@ -139,6 +145,7 @@ public class GameController : MonoBehaviour
                         damaged = true;
                     }
                 }
+
             }
             if (playerHealth.value == 0)
             {
@@ -288,6 +295,7 @@ public class GameController : MonoBehaviour
             isPlayerTurn = true;
         }
         damaged = false;
+        healed = false;
     }
 
     public void BtnEnemyType()
