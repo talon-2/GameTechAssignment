@@ -27,6 +27,7 @@ public class EnemyPatrol : Node
     {
         if (!GameController.isPlayerTurn)
         {
+            Debug.Log("Patrol");
             GameController.enemyCurrentState = "Patroling";
             counter += Time.deltaTime;//wait few secs to move 
             if(counter > waitForPlayer)

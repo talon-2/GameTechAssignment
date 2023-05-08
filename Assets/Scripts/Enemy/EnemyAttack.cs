@@ -57,10 +57,17 @@ public class EnemyAttack : Node
                     GameController.enemyCurrentState = "Attacking";
                     GameController.playerHealthAmt -= GameController.damage;
                     counter = 0f;
+                    if (GameController.playerHealthAmt <= 0f)
+                    {
+                        ClearData("Player");
+                        state = NodeState.RUNNING;
+                        return state;
+                    }
                     GameController.ChangeTurn();
                 }
 
             }
+
         }
         else
         {

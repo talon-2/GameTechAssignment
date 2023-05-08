@@ -29,7 +29,6 @@ public class CheckEnemy : Node
         }
         if (t == null)
         {
-            
             float distance = Vector3.Distance(_transform.position, GameController.player.transform.position);
             
             if (distance < EnemyBT.fovRange)

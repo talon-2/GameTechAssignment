@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GameController : MonoBehaviour
 {
@@ -12,8 +13,9 @@ public class GameController : MonoBehaviour
     public Text gameDifficulty;
     public GameObject MainGameUI;
     public GameObject SettingsUI;
-    public float playerRangeAtt = 5f;
-    public float playerMeleeAtt = 1.5f;
+    public GameObject GameOverUI;
+    public float playerRangeAtt = 6f;
+    public float playerMeleeAtt = 2.5f;
 
     [Header("Required Information(Uneditable)")]
     public LineRenderer circleRenderer;
@@ -21,13 +23,14 @@ public class GameController : MonoBehaviour
     [SerializeField] private float healAmount;
     [SerializeField] private Slider playerHealth;
     [SerializeField] private Slider enemyHealth;
-   
     [SerializeField] private Text turnIndicator;
     [SerializeField] private Text enemyStatus;
     private float playerAttackDistance = 2.5f;
     float distance;
     bool canDoAction;
     public Button attBtn;
+    bool gameOver = false;
+    Vector3 playerInitialStart, enemyInitialStart;
 
     string heavy = "Heavy";
     string light = "Light";
@@ -64,7 +67,6 @@ public class GameController : MonoBehaviour
 
     public static bool isPlayerTurn = true;       //first turn is player
 
-
     void Start()
     {
         playerAttDistance = playerAttackDistance;
@@ -72,76 +74,89 @@ public class GameController : MonoBehaviour
         player = GameObject.FindGameObjectWithTag("Player");
         enemy = GameObject.FindGameObjectWithTag("Enemy");
         attBtn.interactable = false;
+        playerInitialStart = player.transform.position;
+        enemyInitialStart = enemy.transform.position;
     }
 
     void Update()
     {
-        OpenSettings();
-        ChangeGameSettings();
-
-        if (!detectEsc)
+        if(!gameOver)
         {
-            if (isPlayerTurn)
+            OpenSettings();
+            ChangeGameSettings();
+            GameOverUI.SetActive(false);
+            if (!detectEsc)
             {
-                if (Vector3.Distance(player.transform.position, enemy.transform.position) <= playerAttackDistance)//allow player attack option if close
+                if (isPlayerTurn)
                 {
-                    attBtn.interactable = true;
-                }
-                turnIndicator.text = playerTurn;
-                ShowWalkableRadius(100, walkableDistance);
-
-                if (Input.GetMouseButtonDown(0) && !canDoAction)
-                {
-                    if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100))
+                    if (Vector3.Distance(player.transform.position, enemy.transform.position) <= playerAttackDistance)//allow player attack option if close
                     {
-                        distance = Vector3.Distance(player.transform.position, hit.point);
-                        if (distance < walkableDistance)
+                        attBtn.interactable = true;
+                    }
+                    turnIndicator.text = playerTurn;
+                    ShowWalkableRadius(100, walkableDistance);
+
+                    if (Input.GetMouseButtonDown(0) && !canDoAction)
+                    {
+                        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 100))
                         {
-                            canDoAction = true;
-                            player.GetComponent<AIController>().agent.SetDestination(hit.point);//move player to hit position
-                            if (Vector3.Distance(hit.point, enemy.transform.position) > playerAttackDistance)
+                            distance = Vector3.Distance(player.transform.position, hit.point);
+                            if (distance < walkableDistance)
                             {
-                                distance = Vector3.Distance(hit.point, enemy.transform.position);
-                                if (distance > healDistance)
+                                canDoAction = true;
+                                player.GetComponent<AIController>().agent.SetDestination(hit.point);//move player to hit position
+                                if (Vector3.Distance(hit.point, enemy.transform.position) > playerAttackDistance)
                                 {
-                                    if(playerHealth.value < playerHealth.maxValue)
+                                    distance = Vector3.Distance(hit.point, enemy.transform.position);
+                                    if (distance > healDistance)
                                     {
-                                        playerHealth.value += healAmount;
-                                        playerHealthAmt += healAmount;
+                                        if (playerHealth.value < playerHealth.maxValue)
+                                        {
+                                            playerHealth.value += healAmount;
+                                            playerHealthAmt += healAmount;
+                                        }
                                     }
+                                    canDoAction = false;
+                                    StartCoroutine(Wait());
+                                    ChangeTurn();
                                 }
-                                canDoAction = false;
-                                StartCoroutine(Wait());
-                                ChangeTurn();
                             }
                         }
                     }
                 }
-            }
-            else
-            {
-                turnIndicator.text = enemyTurn;
-                //tree will run simultaneously here due to isPlayerTurn condition apply to whole project
-                if (Vector3.Distance(enemy.transform.position, player.transform.position) < healDistance && !healed)
+                else
                 {
-                    if(enemyHealth.value < enemyHealth.maxValue)
+                    turnIndicator.text = enemyTurn;
+                    //tree will run simultaneously here due to isPlayerTurn condition apply to whole project
+                    if (Vector3.Distance(enemy.transform.position, player.transform.position) > healDistance && !healed)
                     {
-                        enemyHealth.value += healAmount;
-                        enemyHealthAmt += healAmount;
-                        healed = true;
+                        if (enemyHealth.value < enemyHealth.maxValue)
+                        {
+                            enemyHealth.value += healAmount;
+                            enemyHealthAmt += healAmount;
+                            healed = true;
+                        }
                     }
                 }
+                if (playerHealth.value == 0)
+                {
+                    player.SetActive(false);
+                    turnIndicator.text = "You Lose";
+                    gameOver = true;
+                }
+                else if (enemyHealth.value == 0)
+                {
+                    enemy.SetActive(false);
+                    turnIndicator.text = "You Win";
+                    gameOver = true;
+                }
             }
-            if (playerHealth.value == 0)
-            {
-                player.SetActive(false);
-                turnIndicator.text = "You Lose";
-            }
-            else if (enemyHealth.value == 0)
-            {
-                enemy.SetActive(false);
-                turnIndicator.text = "You Win";
-            }
+        }
+        else
+        {
+            MainGameUI.SetActive(false);
+            GameOverUI.SetActive(true);
+            canDoAction = true;
         }
     }
 
@@ -315,13 +330,50 @@ public class GameController : MonoBehaviour
     {
         enemyHealth.value -= damage;
         enemyHealthAmt -= damage;
+        attBtn.interactable = false; 
+        canDoAction = false;
         StartCoroutine(Wait());
         ChangeTurn();
+    }
+    public void BtnRestart()
+    {
+    //    player.transform.position = playerInitialStart;
+    //    enemy.transform.position = enemyInitialStart;
+        enemyHealth.value = enemyHealth.maxValue;
+        enemyHealthAmt = enemyHealth.maxValue;
+        playerHealth.value = playerHealth.maxValue;
+        playerHealthAmt = playerHealth.maxValue;
+        turnIndicator.text = playerTurn;
+        isPlayerTurn = true;
+        enemyStatus.text = idle;
+        enemyCurrentState = idle;
+        enemyType.text = heavy;
+        enemyTyping = heavy;
+        enemyWeaponUsed.text = melee;
+        enemyWeapon = melee;
+        playerWeapon = melee;
+        playerWeaponUsed.text = melee;
+        gameDifficulty.text = easy;
+        difficulty = easy;
+        gameOver = false;
+        MainGameUI.SetActive(true);
+        GameOverUI.SetActive(false);
+        player.SetActive(true);
+        enemy.SetActive(true);
+        attBtn.interactable = false;
+        canDoAction = false;
+        //player.GetComponent<AIController>().agent.SetDestination(playerInitialStart);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+
+    }
+    public void BtnQuit()
+    {
+        Application.Quit();
     }
 
     IEnumerator Wait()
     {
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(1f);
     }
 }
 
